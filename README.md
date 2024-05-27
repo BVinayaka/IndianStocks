@@ -77,7 +77,7 @@ Future enhancements could include:
 - Enhancing live graph visualizations with more interactive features
 
 ## Dependencies
-
+'''
 Flask
 plotly
 pandas
@@ -102,6 +102,7 @@ tensorflow
 tensorrt
 pymongo
 yahoo_fin
+'''
 ## How to Run
 
 1. Clone this repository:
