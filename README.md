@@ -106,10 +106,9 @@ yahoo_fin
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/stock-prediction-project.git
+   git clone https://github.com/BVinayaka/IndianStocks.git
    ```
-3. Install the required dependencies:
-   ```
+3. Install the required dependencies:   ```
    pip install -r requirements.txt
    ```
 4. Run the preprocessing script:
