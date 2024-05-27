@@ -50,7 +50,7 @@ headers = {
     "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYjk0NzQyNTctOWY4Yy00Y2I0LWE5Y2UtMjNhM2Q5ZDM4ZTRhIiwidHlwZSI6ImFwaV90b2tlbiJ9.Hc9nYSzzt5thtOWuWq5Kr14wD0nixZdO7ODBheS3lLE"
 }
 
-app.secret_key = 'b\xb8\xc18\x8f/\xd8\x97\xc0c[\xb5zd\xe8\x1f\xa4\xbc\xa5\x1c\xec\x86\xa5?\xb1'
+app.secret_key = ''
 url = "https://api.edenai.run/v2/text/question_answer"
 client = MongoClient('mongodb://localhost:27017')
 db = client['STOCK']
