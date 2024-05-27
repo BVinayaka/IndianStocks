@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stock Analysis</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="./static/index.css" />
+  </head>
+  <body>
+    
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container">
+        <a class="navbar-brand" href="#">TOP STOCK MARKET</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            {% if 'user' in session %}
+            <li class="nav-item">
+              <a class="nav-link" href="/logout">LOGOUT</a>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="/login">LOGIN</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/signup">SIGNUP</a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+    
+    <div class="strategy-container">
+      <!-- Intraday Strategy -->
+      <div class="strategy-box" id="intradayBox">
+        <h3>Intraday Strategy</h3>
+        {% if 'user' in session %}
+        <a href="#" onclick="displayTopStocks('1 Day')">Top 5 Stocks</a>
+        {% else %}
+        <a href="#" onclick="showLoginAlert()">Top 5 Stocks</a>
+        {% endif %}
+        <div id="intradayResults"></div>
+      </div>
+
+      <!-- Short Term Strategy -->
+      <div class="strategy-box" id="shorttermBox">
+        <h3>Short Term Strategy</h3>
+        {% if 'user' in session %}
+        <a href="#" onclick="displayTopStocks('30 Days')">Top 5 Stocks</a>
+        {% else %}
+        <a href="#" onclick="showLoginAlert()">Top 5 Stocks</a>
+        {% endif %}
+        <div id="shorttermResults"></div>
+      </div>
+
+      <!-- Midterm Strategy -->
+      <div class="strategy-box" id="midtermBox">
+        <h3>Midterm Strategy</h3>
+        {% if 'user' in session %}
+        <a href="#" onclick="displayTopStocks('150 Days')">Top 5 Stocks</a>
+        {% else %}
+        <a href="#" onclick="showLoginAlert()">Top 5 Stocks</a>
+        {% endif %}
+        <div id="midtermResults"></div>
+      </div>
+
+      <!-- Market Cap Strategy -->
+      <div class="strategy-box" id="marketCapBox">
+        <h3>Market Cap Strategy</h3>
+        {% if 'user' in session %}
+        <a href="#" onclick="getTopMarketCap(event)">Top 5 Stocks</a>
+        {% else %}
+        <a href="#" onclick="showLoginAlert()">Top 5 Stocks</a>
+        {% endif %}
+        <div id="marketCapResults"></div>
+      </div>
+    </div>
+    {% if 'user' in session %}
+    <div class="search-container">
+        <input type="text" id="searchInput" onkeyup="searchStocks()" placeholder="Search...">
+    </div>
+    <!-- Suggestions Dropdown -->
+    <div id="suggestions"></div>
+{% else %}
+    <div class="search-container">
+        <input type="text" id="searchInput" onkeypress="showLoginAlert()" placeholder="Search...">
+    </div>
+{% endif %}
+
+
+
+{% if 'user' in session %}
+<!-- Chatbot Section -->
+<div id="chatbotContainer">
+    <div id="chatbotHeader">
+        Chatbot
+        <button id="closeChatbot" onclick="closeChatbot()">×</button>
+    </div>
+    <div id="chatbotMessages"></div>
+    <!-- User input field and send button -->
+    <div id="userInputContainer">
+        <input
+            type="text"
+            id="userInput"
+            placeholder="Type your message..."
+            onkeydown="if(event.keyCode===13) sendMessage()"
+        />
+        <button id="sendMessage" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+{% endif %}
+
+    {% if 'user' in session %}
+    <!-- User is logged in -->
+    <button id="openChatbot">
+        <img src="./static/download.png" alt="Chatbot Icon" />
+    </button>
+{% else %}
+    <!-- User is not logged in -->
+    <button id="openChatbot" onclick="showLoginAlert()">
+        <img src="./static/download.png" alt="Chatbot Icon" />
+    </button>
+{% endif %}
+
+    <!-- Welcome Container -->
+    <div id="welcomeContainer"></div>
+
+    <div id="aboutInfo" style="display: none">
+      <h2>About</h2>
+      <table style="border-collapse: collapse; width: 100%">
+        <tr>
+          <td style="border: 1px solid black"><strong>Name:</strong></td>
+          <td style="border: 1px solid black"><span id="stockName"></span></td>
+          <td style="border: 1px solid black"><strong>CIK:</strong></td>
+          <td style="border: 1px solid black"><span id="CIK"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Symbol:</strong></td>
+          <td style="border: 1px solid black"><span id="symbol"></span></td>
+          <td style="border: 1px solid black"><strong>Sector:</strong></td>
+          <td style="border: 1px solid black"><span id="sector"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Description:</strong></td>
+          <td colspan="3" style="border: 1px solid black">
+            <span id="Description"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Asset Type:</strong></td>
+          <td style="border: 1px solid black"><span id="assetType"></span></td>
+          <td style="border: 1px solid black"><strong>Address:</strong></td>
+          <td style="border: 1px solid black"><span id="address"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Exchange:</strong></td>
+          <td style="border: 1px solid black"><span id="exchange"></span></td>
+          <td style="border: 1px solid black">
+            <strong>Fiscal Year End:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="fiscalYearEnd"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Industry:</strong></td>
+          <td style="border: 1px solid black"><span id="industry"></span></td>
+          <td style="border: 1px solid black">
+            <strong>Latest Quarter:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="latestQuarter"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Country:</strong></td>
+          <td style="border: 1px solid black"><span id="country"></span></td>
+          <td style="border: 1px solid black"><strong>EBITDA:</strong></td>
+          <td style="border: 1px solid black"><span id="EBITDA"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Currency:</strong></td>
+          <td style="border: 1px solid black"><span id="currency"></span></td>
+          <td style="border: 1px solid black"><strong>PE Ratio:</strong></td>
+          <td style="border: 1px solid black"><span id="PERatio"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Market Capitalization:</strong>
+          </td>
+          <td style="border: 1px solid black"><span id="marketCap"></span></td>
+          <td style="border: 1px solid black"><strong>PEG Ratio:</strong></td>
+          <td style="border: 1px solid black"><span id="PEGRatio"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Shares Outstanding:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="sharesOutstanding"></span>
+          </td>
+          <td style="border: 1px solid black"><strong>Book Value:</strong></td>
+          <td style="border: 1px solid black"><span id="bookValue"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Dividend Per Share:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="dividendPerShare"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Dividend Yield:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="dividendYield"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>EPS:</strong></td>
+          <td style="border: 1px solid black"><span id="EPS"></span></td>
+          <td style="border: 1px solid black">
+            <strong>Revenue Per Share TTM:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="revenuePerShareTTM"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Profit Margin:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="profitMargin"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Operating Margin TTM:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="operatingMarginTTM"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Return On Assets TTM:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="returnOnAssetsTTM"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Return On Equity TTM:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="returnOnEquityTTM"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Revenue TTM:</strong></td>
+          <td style="border: 1px solid black"><span id="revenueTTM"></span></td>
+          <td style="border: 1px solid black">
+            <strong>Gross Profit TTM:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="grossProfitTTM"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Diluted EPS TTM:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="dilutedEPSTTM"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Quarterly Earnings Growth YOY:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="quarterlyEarningsGrowthYOY"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Quarterly Revenue Growth YOY:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="quarterlyRevenueGrowthYOY"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Analyst Target Price:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="analystTargetPrice"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Analyst Rating Strong Buy:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="analystRatingStrongBuy"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Analyst Rating Buy:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="analystRatingBuy"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Analyst Rating Hold:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="analystRatingHold"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Analyst Rating Sell:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="analystRatingSell"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Analyst Rating Strong Sell:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="analystRatingStrongSell"></span>
+          </td>
+          <td style="border: 1px solid black"><strong>Trailing PE:</strong></td>
+          <td style="border: 1px solid black"><span id="trailingPE"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black"><strong>Forward PE:</strong></td>
+          <td style="border: 1px solid black"><span id="forwardPE"></span></td>
+          <td style="border: 1px solid black">
+            <strong>Price To Sales Ratio TTM:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="priceToSalesRatioTTM"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Price To Book Ratio:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="priceToBookRatio"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>EV To Revenue:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="EVToRevenue"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>EV To EBITDA:</strong>
+          </td>
+          <td style="border: 1px solid black"><span id="EVToEBITDA"></span></td>
+          <td style="border: 1px solid black"><strong>Beta:</strong></td>
+          <td style="border: 1px solid black"><span id="beta"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>52 Week High:</strong>
+          </td>
+          <td style="border: 1px solid black"><span id="52WeekHigh"></span></td>
+          <td style="border: 1px solid black"><strong>52 Week Low:</strong></td>
+          <td style="border: 1px solid black"><span id="52WeekLow"></span></td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>50 Day Moving Average:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="50DayMovingAverage"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>200 Day Moving Average:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="200DayMovingAverage"></span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid black">
+            <strong>Dividend Date:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="dividendDate"></span>
+          </td>
+          <td style="border: 1px solid black">
+            <strong>Ex Dividend Date:</strong>
+          </td>
+          <td style="border: 1px solid black">
+            <span id="exDividendDate"></span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Welcome Container 1 -->
+    <div id="welcomeContainer1"></div>
+
+    <!-- Technical Graph Container -->
+    <div id="technicalGraphContainer" style="display: none"></div>
+    <div id="trend" style="display: none; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f9f9f9;"></div>
+
+    <!-- Live Stock Data Section -->
+
+    <div id="chartDiv" style="display: none"></div>
+
+    <div id="showMachine" style="display: none"></div>
+
+    <div id="plots" ></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
+
+    <script>
+      var socket = io.connect("http://localhost:5000");
+
+      socket.on("connect", function () {
+        console.log("Connected to the server");
+      });
+
+      socket.on("update_live_data", function (data) {
+        var chartDiv = document.getElementById("chartDiv");
+        Plotly.react(
+          chartDiv,
+          JSON.parse(data.div).data,
+          JSON.parse(data.div).layout
+        );
+      });
+      var chatbotVisible = false;
+
+      document
+        .getElementById("openChatbot")
+        .addEventListener("click", toggleChatbot);
+      
+
+
+ // Check if the user is logged in
+ function checkLoginStatus() {
+            fetch('/api/checkLoginStatus')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.logged_in) {
+                        // If user is not logged in, redirect to homepage
+                        window.location.href = '/';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking login status:', error);
+                });
+        }
+
+        // Call checkLoginStatus when the page loads
+        window.onload = function() {
+            checkLoginStatus();
+        };
+
+      function toggleChatbot() {
+        var chatbotContainer = document.getElementById("chatbotContainer");
+        chatbotVisible = !chatbotVisible;
+
+        chatbotContainer.style.display = chatbotVisible ? "block" : "none";
+        if (!chatbotVisible) clearChatbotMessages();
+      }
+
+      function clearChatbotMessages() {
+        var chatbotMessages = document.getElementById("chatbotMessages");
+        chatbotMessages.innerHTML = "";
+      }
+      // Create search bar
+      // var searchBar = document.createElement("input");
+      // searchBar.type = "text";
+      // searchBar.placeholder = "Enter stock symbol";
+      searchBar.addEventListener("keyup", function (event) {
+        if (event.key === "Enter") {
+          var symbol = event.target.value.toUpperCase();
+          welcomeMessage(event, symbol); // Pass the symbol to welcomeMessage
+        }
+      });
+      document.addEventListener("DOMContentLoaded", function() {
+    // Function to fetch data
+    function fetchData(ticker) {
+        fetch('/get_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ticker:ticker, // Use the ticker provided
+                start_date: '2022-01-01' // Change this to the desired start date
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Parse JSON data
+            const plot1 = JSON.parse(data.plot1);
+            const plot2 = JSON.parse(data.plot2);
+
+            // Render plots
+            Plotly.newPlot('plots', plot1, {responsive: true});
+            Plotly.newPlot('plots', plot2, {responsive: true});
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Create search bar
+    var searchBar = document.createElement("input");
+    searchBar.type = "text";
+    searchBar.placeholder = "Enter stock symbol";
+    searchBar.addEventListener("keyup", function (event) {
+        if (event.key === "Enter") {
+            var symbol = event.target.value.toUpperCase();
+            fetchData(symbol); // Fetch data using the entered symbol
+        }
+    });
+
+    // Append search bar to the document body
+    document.body.appendChild(searchBar);
+});
+      async function displayTopStocks(strategy) {
+        console.log(`Fetching top stocks for ${strategy}...`);
+
+        const response = await fetch(`/topstock?strategy=${strategy}`);
+        const data = await response.json();
+
+        console.log(data);
+
+        let containerId;
+        if (strategy === "1 Day") {
+          containerId = "intradayResults";
+        } else if (strategy === "30 Days") {
+          containerId = "shorttermResults";
+        } else if (strategy === "150 Days") {
+          containerId = "midtermResults";
+        }
+
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+
+        for (const [ticker, marketCap] of Object.entries(data)) {
+          const stockElement = document.createElement("div");
+          stockElement.innerHTML = `<a href='#' onclick='welcomeMessage(event, "${ticker}")'>${ticker}</a>`;
+          container.appendChild(stockElement);
+        }
+      }
+
+      
+
+      function disableOtherStockLists(clickedBox) {
+        var strategyBoxes = document.querySelectorAll(".strategy-box");
+
+        strategyBoxes.forEach(function (box) {
+          if (box !== clickedBox) {
+            var otherStockList = box.querySelector(".stock-list");
+            if (otherStockList) {
+              otherStockList.style.display = "none";
+            }
+          }
+        });
+      }
+
+      function welcomeMessage(event, symbol) {
+        event.preventDefault();
+        var welcomeContainer = document.getElementById("welcomeContainer");
+
+        welcomeContainer.innerHTML = "<div>Welcome to " + symbol + "!</div>";
+        welcomeContainer.innerHTML +=
+          "<button class='main-page-button' onclick='showAbout(\"" +
+          symbol +
+          "\")'>About</button>";
+        welcomeContainer.innerHTML +=
+          "<button class='main-page-button' onclick='showTechnical(\"" +
+          symbol +
+          "\")'>Technical</button>";
+        welcomeContainer.innerHTML +=
+          "<button class='main-page-button' onclick='loadLiveData(\"" +
+          symbol +
+          "\")'>Show Live Data</button>";
+        welcomeContainer.innerHTML +=
+          "<button class='main-page-button' onclick='showMachine(\"" +
+          symbol +
+          "\")'>Show Machine Learning Plots</button>";
+          welcomeContainer.innerHTML +=
+          "<button class='main-page-button' onclick='showLorntz(\"" +
+          symbol +
+          "\")'>Show Lorentz classification</button>";
+          welcomeContainer.innerHTML += `
+    <button class='main-page-button' onclick="fetchTrend('${symbol}')">Get Trend</button>;
+    
+`;
+      }
+
+      async function showAbout(stockName) {
+        try {
+          const response = await fetch(`/about?symbol=${stockName}`);
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const data = await response.json();
+          displayAboutInfo(data);
+          document.getElementById("technicalGraphContainer").style.display =
+            "none";
+          document.getElementById("chartDiv").style.display = "none";
+          document.getElementById("trend").style.display = "none";
+          document.getElementById("aboutInfo").style.display = "block";
+        } catch (error) {
+          console.error("Error fetching about info:", error);
+          alert("Failed to fetch about info. Please try again later.");
+        }
+      }
+
+      function displayAboutInfo(data) {
+        document.getElementById("stockName").innerText = data.Name;
+        document.getElementById("symbol").innerText = data.Symbol;
+        document.getElementById("assetType").innerText = data.AssetType;
+        document.getElementById("exchange").innerText = data.Exchange;
+        document.getElementById("industry").innerText = data.Industry;
+        document.getElementById("country").innerText = data.Country;
+        document.getElementById("currency").innerText = data.Currency;
+        document.getElementById("marketCap").innerText = formatCurrency(
+          data.MarketCapitalization
+        );
+        document.getElementById("sharesOutstanding").innerText = formatNumber(
+          data.SharesOutstanding
+        );
+        document.getElementById("Description").innerText = data.Description;
+        document.getElementById("CIK").innerText = data.CIK;
+        document.getElementById("sector").innerText = data.Sector;
+        document.getElementById("address").innerText = data.Address;
+        document.getElementById("fiscalYearEnd").innerText = data.FiscalYearEnd;
+        document.getElementById("latestQuarter").innerText = data.LatestQuarter;
+        document.getElementById("EBITDA").innerText = formatCurrency(
+          data.EBITDA
+        );
+        document.getElementById("PERatio").innerText = data.PERatio;
+        document.getElementById("PEGRatio").innerText = data.PEGRatio;
+        document.getElementById("bookValue").innerText = data.BookValue;
+        document.getElementById("dividendPerShare").innerText =
+          data.DividendPerShare;
+        document.getElementById("dividendYield").innerText = data.DividendYield;
+        document.getElementById("EPS").innerText = data.EPS;
+        document.getElementById("revenuePerShareTTM").innerText =
+          data.RevenuePerShareTTM;
+        document.getElementById("profitMargin").innerText = data.ProfitMargin;
+        document.getElementById("operatingMarginTTM").innerText =
+          data.OperatingMarginTTM;
+        document.getElementById("returnOnAssetsTTM").innerText =
+          data.ReturnOnAssetsTTM;
+        document.getElementById("returnOnEquityTTM").innerText =
+          data.ReturnOnEquityTTM;
+        document.getElementById("revenueTTM").innerText = formatCurrency(
+          data.RevenueTTM
+        );
+        document.getElementById("grossProfitTTM").innerText = formatCurrency(
+          data.GrossProfitTTM
+        );
+        document.getElementById("dilutedEPSTTM").innerText = data.DilutedEPSTTM;
+        document.getElementById("quarterlyEarningsGrowthYOY").innerText =
+          data.QuarterlyEarningsGrowthYOY;
+        document.getElementById("quarterlyRevenueGrowthYOY").innerText =
+          data.QuarterlyRevenueGrowthYOY;
+        document.getElementById("analystTargetPrice").innerText =
+          formatCurrency(data.AnalystTargetPrice);
+        document.getElementById("analystRatingStrongBuy").innerText =
+          data.AnalystRatingStrongBuy;
+        document.getElementById("analystRatingBuy").innerText =
+          data.AnalystRatingBuy;
+        document.getElementById("analystRatingHold").innerText =
+          data.AnalystRatingHold;
+        document.getElementById("analystRatingSell").innerText =
+          data.AnalystRatingSell;
+        document.getElementById("analystRatingStrongSell").innerText =
+          data.AnalystRatingStrongSell;
+        document.getElementById("trailingPE").innerText = data.TrailingPE;
+        document.getElementById("forwardPE").innerText = data.ForwardPE;
+        document.getElementById("priceToSalesRatioTTM").innerText =
+          data.PriceToSalesRatioTTM;
+        document.getElementById("priceToBookRatio").innerText =
+          data.PriceToBookRatio;
+        document.getElementById("EVToRevenue").innerText = data.EVToRevenue;
+        document.getElementById("EVToEBITDA").innerText = data.EVToEBITDA;
+        document.getElementById("beta").innerText = data.Beta;
+        document.getElementById("52WeekHigh").innerText = formatCurrency(
+          data["52WeekHigh"]
+        );
+        document.getElementById("52WeekLow").innerText = formatCurrency(
+          data["52WeekLow"]
+        );
+        document.getElementById("50DayMovingAverage").innerText =
+          formatCurrency(data["50DayMovingAverage"]);
+        document.getElementById("200DayMovingAverage").innerText =
+          formatCurrency(data["200DayMovingAverage"]);
+        document.getElementById("dividendDate").innerText = data.DividendDate;
+        document.getElementById("exDividendDate").innerText =
+          data.ExDividendDate;
+      }
+
+      async function showTechnical(stockName) {
+        try {
+          const response = await fetch(`/technical?symbol=${stockName}`);
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const plotPaths = await response.json(); // Parse the JSON response
+
+          var welcomeContainer = document.getElementById(
+            "technicalGraphContainer"
+          );
+          welcomeContainer.innerHTML = "";
+
+          // Display welcome message
+          welcomeContainer.innerHTML += `<div class="welcome-message">Welcome to ${stockName}!</div>`;
+
+          document.getElementById("aboutInfo").style.display = "none";
+          document.getElementById("chartDiv").style.display = "none";
+          document.getElementById("showMachine").style.display = "none";
+          document.getElementById("trend").style.display = "none";
+          // Create a table to display plot options
+          welcomeContainer.innerHTML += `
+            <table>
+    <thead>
+        <tr>
+            <th>Plot Type</th>
+            <th>Preview</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>SMA Plot</td>
+            <td>
+                <img src="${plotPaths.SMA_plot}" alt="SMA Plot" width="300" class="plot-image" onclick="expandImage(this)">
+                <div class="expanded-image" onclick="closeImage(this)">
+                    <img src="${plotPaths.SMA_plot}" alt="SMA Plot">
+                </div>
+            </td>
+            <td>Simple Moving Average (SMA) plot shows the average price of a stock over a specified period.</td>
+        </tr>
+        <tr>
+            <td>RSI Plot</td>
+            <td>
+                <img src="${plotPaths.RSI_plot}" alt="RSI Plot" width="300" class="plot-image" onclick="expandImage(this)">
+                <div class="expanded-image" onclick="closeImage(this)">
+                    <img src="${plotPaths.RSI_plot}" alt="RSI Plot">
+                </div>
+            </td>
+            <td>Relative Strength Index (RSI) plot indicates whether a stock is overbought or oversold.</td>
+        </tr>
+        <tr>
+            <td>EMA Plot</td>
+            <td>
+                <img src="${plotPaths.EMA_plot}" alt="EMA Plot" width="300" class="plot-image" onclick="expandImage(this)">
+                <div class="expanded-image" onclick="closeImage(this)">
+                    <img src="${plotPaths.EMA_plot}" alt="EMA Plot">
+                </div>
+            </td>
+            <td>Exponential Moving Average (EMA) plot gives more weight to recent prices, making it more responsive to new information.</td>
+        </tr>
+    </tbody>
+</table>`;
+
+          document.getElementById("technicalGraphContainer").style.display =
+            "block"; // Show technical graph container
+        } catch (error) {
+          console.error("Error fetching technical plot:", error);
+          alert("Failed to fetch technical plot. Please try again later.");
+        }
+      }
+
+      // Function to expand the image
+      function expandImage(image) {
+        const expandedImage = image.nextElementSibling;
+        expandedImage.style.display = "block";
+      }
+
+      // Function to close the expanded image
+      function closeImage(expandedImage) {
+        expandedImage.style.display = "none";
+      }
+
+      function formatCurrency(value) {
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(value);
+      }
+
+      function formatNumber(value) {
+        return new Intl.NumberFormat("en-US").format(value);
+      }
+
+      async function displayTechnicalGraph(symbol) {
+        try {
+          const response = await fetch(`/technical?symbol=${symbol}`);
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const responseData = await response.json();
+          const graphData = responseData.data; // Assuming this is the correct data structure
+
+          // Update RSI value on the page
+          document.getElementById(
+            "rsiValue"
+          ).innerText = `RSI: ${responseData.RSI}`;
+
+          // Display the technical graph using Plotly
+          Plotly.newPlot("technicalGraph", graphData);
+
+          // Show the technical graph container
+          document.getElementById("aboutInfo").style.display = "none";
+          document.getElementById("showMachine").style.display = "none";
+          document.getElementById("trend").style.display = "none"; // Hide about info container
+          document.getElementById("technicalGraphContainer").style.display =
+            "block";
+          document.getElementById("technicalGraph").style.display = "none";
+        } catch (error) {
+          console.error("Error fetching technical graph:", error);
+          alert("Failed to fetch technical graph. Please try again later.");
+        }
+      }
+      function formatCurrency(value) {
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(value);
+      }
+
+      let intervalId;
+
+      function loadLiveData(stockName) {
+        clearInterval(intervalId); // Clear any existing intervals
+
+        refreshLiveData(stockName); // Immediately load data
+        document.getElementById("aboutInfo").style.display = "none";
+        document.getElementById("technicalGraphContainer").style.display =
+          "none";
+          document.getElementById("trend").style.display = "none";
+        document.getElementById("showMachine").style.display = "none";
+        document.getElementById("chartDiv").style.display = "block";
+
+        intervalId = setInterval(() => {
+          refreshLiveData(stockName);
+        }, 10000);
+      }
+
+      async function refreshLiveData(stockName) {
+        try {
+          const response = await fetch(`/live_data?symbol=${stockName}`);
+          const data = await response.json();
+
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          const chartData = JSON.parse(data.div);
+          renderChart(chartData);
+        } catch (error) {
+          console.error("Error fetching live data:", error);
+          alert("Failed to fetch live data. Please try again later.");
+        }
+      }
+
+      function renderChart(chartData) {
+        const chartDiv = document.getElementById("chartDiv");
+        Plotly.newPlot(chartDiv, chartData.data, chartData.layout);
+      }
+
+      async function showMachine(stockName) {
+        try {
+          // Fetch machine-generated plots and table data
+          const response = await fetch(`/run_code?symbol=${stockName}`);
+
+          if (!response.ok) {
+            throw new Error(
+              "Failed to fetch machine-generated plots and table data."
+            );
+          }
+
+          const responseData = await response.json();
+          const volumePlotPath = responseData.volume_plot;
+          const dailyReturnPath = responseData.daily_return_histogram;
+          const adjClosePath = responseData.adjusted_close_price;
+          const predictionPath = responseData.predicted_vs_actual_plot;
+
+          // Fetch stock information
+          const aboutResponse = await fetch(`/about?symbol=${stockName}`);
+          if (!aboutResponse.ok) {
+            throw new Error("Failed to fetch stock information.");
+          }
+
+          const aboutData = await aboutResponse.json();
+
+          // Display the stock information and machine-generated plots
+          const welcomeContainer = document.getElementById("showMachine");
+          welcomeContainer.innerHTML = "";
+
+          // Display the stock information
+          welcomeContainer.innerHTML += `
+            <div class="stock-info">
+                <h2>${aboutData.Name} (${aboutData.Symbol})</h2>
+                <table border="1">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Close Price</th>
+                            <th>Predicted Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${responseData.table_data.date
+                          .map(
+                            (date, index) => `
+                            <tr>
+                                <td>${date}</td>
+                                <td>${responseData.table_data.actual[index]}</td>
+                                <td>${responseData.table_data.predicted[index]}</td>
+                            </tr>
+                        `
+                          )
+                          .join("")}
+                    </tbody>
+                </table>
+            </div>
+            <div class="welcome-message">Welcome to ${stockName}!</div>
+        `;
+
+          // Create a table to display the plots
+          welcomeContainer.innerHTML += `
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Plot Type</th>
+                        <th>Preview</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Volume Plot</td>
+                        <td><img src="${volumePlotPath}" alt="Volume Plot" class="preview-image" onclick="showLargeImage(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Daily Return Histogram</td>
+                        <td><img src="${dailyReturnPath}" alt="Daily Return Histogram" class="preview-image" onclick="showLargeImage(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Adjusted Close Price</td>
+                        <td><img src="${adjClosePath}" alt="Adjusted Close Price" class="preview-image" onclick="showLargeImage(this)"></td>
+                    </tr>
+                    <tr>
+                        <td>Predicted vs Actual Close Price</td>
+                        <td><img src="${predictionPath}" alt="Predicted vs Actual Close Price" class="preview-image" onclick="showLargeImage(this)"></td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+          // Hide other elements and display the container
+          document.getElementById("aboutInfo").style.display = "none";
+          document.getElementById("chartDiv").style.display = "none";
+          document.getElementById("technicalGraphContainer").style.display =
+            "none";
+            document.getElementById("trend").style.display = "none";
+          welcomeContainer.style.display = "block";
+        } catch (error) {
+          console.error("Error fetching data:", error.message);
+          alert(error.message);
+        }
+      }
+
+      function showLargeImage(element) {
+        const largeImageContainer = document.createElement("div");
+        largeImageContainer.className = "large-image";
+        largeImageContainer.onclick = function () {
+          this.remove(); // Remove the large image container when clicked
+        };
+
+        const largeImage = document.createElement("img");
+        largeImage.src = element.src;
+        largeImage.alt = element.alt;
+
+        largeImageContainer.appendChild(largeImage);
+        document.body.appendChild(largeImageContainer);
+      }
+
+      // Function to send user message
+      function sendMessage() {
+        const userInput = document.getElementById("userInput").value;
+
+        if (userInput.trim() !== "") {
+          displayMessage("user", userInput);
+
+          // Prepare payload
+          const payload = {
+            text1: "stocks",
+            text2: "stocks",
+            question: userInput,
+          };
+
+          // Send POST request to the server
+          fetch("/chat", {
+            // Assuming your Python server is listening on '/chat'
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              const answer = data.answer; // Assuming the response JSON has an 'answer' field
+              displayMessage("bot", answer);
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              displayMessage("bot", "Sorry, something went wrong.");
+            });
+
+          // Clear the user input
+          document.getElementById("userInput").value = "";
+        }
+      }
+      function displayMessage(sender, message) {
+        const messageContainer = document.getElementById("chatbotMessages");
+
+        const messageElement = document.createElement("div");
+        messageElement.innerText = message;
+        messageElement.classList.add("message", sender);
+
+        if (sender === "user") {
+          messageElement.style.textAlign = "right"; // Align bot messages to the right
+          messageElement.style.backgroundColor = "#e6e6e6"; // Light blue background for bot messages
+          messageElement.style.borderRadius = "5px"; // Rounded corners
+          messageElement.style.marginLeft = "auto"; // Push bot messages to the right
+          messageElement.style.maxWidth = "70%"; // Limit width for bot messages
+          messageElement.style.textAlign = "left";
+        } else {
+          messageElement.style.textAlign = "left"; // Align user messages to the left
+          messageElement.style.backgroundColor = "#f0f0f0"; // Light gray background for user messages
+          messageElement.style.borderRadius = "5px"; // Rounded corners
+          messageElement.style.marginRight = "auto"; // Push user messages to the left
+          messageElement.style.maxWidth = "70%";
+          messageElement.style.textAlign = "left"; // Limit width for user messages
+        }
+
+        messageContainer.appendChild(messageElement);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+      }
+      function closeChatbot() {
+        const chatbotContainer = document.getElementById("chatbotContainer");
+        chatbotContainer.style.display = "none"; // Hide the chatbot container
+      }
+
+      function getTopMarketCap(event) {
+        event.preventDefault(); // Prevent the default behavior of following the link
+
+        fetch("/api/getTopMarketCap")
+          .then((response) => response.json())
+          .then((data) => {
+            const stockContainer = document.getElementById("marketCapResults");
+            stockContainer.innerHTML = ""; // Clear previous results
+
+            data.forEach((stock) => {
+              const stockLink = document.createElement("a");
+              stockLink.href = "#";
+              stockLink.onclick = (event) =>
+                welcomeMessage(event, stock["Symbol"]);
+              stockLink.textContent = stock["Symbol"];
+
+              stockContainer.appendChild(stockLink);
+              stockContainer.appendChild(document.createElement("br")); // Add line break after each symbol
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+          });
+      }
+      function showLoginAlert() {
+        alert("Please login to view this information.");
+      }
+      async function fetchTrend(symbol) {
+            try {
+                const response = await fetch(`/get_trend?symbol=${symbol}`);
+                const data = await response.json();
+                if (data.error) {
+                    console.error('Error fetching trend:', data.error);
+                } else {
+                    const trendDiv = document.getElementById('trend');
+                    trendDiv.textContent = `Trend for ${symbol}: ${data.trend}`;
+                    trendDiv.style.display = 'block'; // Show the trend div
+
+                    // Change background color based on trend
+                    if (data.trend === 'Buy') {
+                        trendDiv.style.backgroundColor = 'green';
+                    } else if (data.trend === 'Sell') {
+                        trendDiv.style.backgroundColor = 'red';
+                    } else if (data.trend === 'Hold') {
+                        trendDiv.style.backgroundColor = 'yellow';
+                    }
+
+                    // Hide other elements
+                    document.getElementById("aboutInfo").style.display = "none";
+                    document.getElementById("showMachine").style.display = "none";
+                    document.getElementById("technicalGraphContainer").style.display = "none";
+                    document.getElementById("technicalGraph").style.display = "none";
+                }
+            } catch (error) {
+                console.error('Error fetching trend:', error);
+            }
+        }
+function searchStocks() {
+    const prefix = document.getElementById("searchInput").value;
+    fetch('/search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prefix: prefix }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        const suggestionsDiv = document.getElementById("suggestions");
+        suggestionsDiv.innerHTML = '';
+
+        data.forEach((stock, index) => {
+            const stockElement = document.createElement("div");
+            stockElement.textContent = `${stock.symbol} - ${stock.name}`;
+
+            // Add click event listener
+            stockElement.addEventListener('click', function() {
+                document.getElementById("searchInput").value = stock.symbol;
+                welcomeMessage(event, stock.symbol);
+            });
+
+            // Add mouseover event listener
+            stockElement.addEventListener('mouseover', function() {
+                resetBackground();
+                stockElement.style.backgroundColor = "#f0f0f0";
+            });
+
+            // Add mouseout event listener
+            stockElement.addEventListener('mouseout', function() {
+                resetBackground();
+            });
+
+            suggestionsDiv.appendChild(stockElement);
+        });
+
+        // Add event listener for keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            const currentSelection = suggestionsDiv.querySelector('.selected');
+            const suggestions = suggestionsDiv.children;
+
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+
+                let nextIndex = 0;
+                if (currentSelection) {
+                    // Get the index of the currently selected suggestion
+                    const currentIndex = Array.from(suggestions).indexOf(currentSelection);
+                    // Calculate the next index based on the arrow key pressed
+                    nextIndex = event.key === "ArrowDown" ? (currentIndex + 1) % suggestions.length : (currentIndex - 1 + suggestions.length) % suggestions.length;
+                    // Remove the 'selected' class from the current selection
+                    currentSelection.classList.remove('selected');
+                }
+                
+                // Add the 'selected' class to the next suggestion
+                suggestions[nextIndex].classList.add('selected');
+                // Set the value of the search input to the selected suggestion's text content
+                document.getElementById("searchInput").value = suggestions[nextIndex].textContent.split(" - ")[0];
+
+                // Get the computed background color of the search input
+                const searchBarBackgroundColor = window.getComputedStyle(document.getElementById("searchInput")).backgroundColor;
+                // Apply the background color to the selected suggestion
+                suggestions[nextIndex].style.backgroundColor = searchBarBackgroundColor;
+            }
+        });
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function resetBackground() {
+    const suggestionsDiv = document.getElementById("suggestions");
+    const suggestions = suggestionsDiv.children;
+    // Remove the 'selected' class from all suggestions and reset background color
+    for (let i = 0; i < suggestions.length; i++) {
+        suggestions[i].classList.remove('selected');
+        suggestions[i].style.backgroundColor = "";
+    }
+}
+function showLorntz(symbol) {
+    // Assuming you have a function to fetch data from the server
+    fetch('/get_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            ticker: symbol, // Pass the symbol parameter to fetch data for specific ticker
+            start_date: '2022-01-01' // Change this to the desired start date
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Parse JSON data
+        const plot1 = JSON.parse(data.plot1);
+        const plot2 = JSON.parse(data.plot2);
+
+        // Render plots
+        Plotly.newPlot('plots', plot1, {responsive: true});
+        Plotly.newPlot('plots', plot2, {responsive: true});
+    })
+    .catch(error => console.error('Error:', error));
+}
+    </script>
+  </body>
+</html>
