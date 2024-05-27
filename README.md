@@ -116,13 +116,14 @@ yahoo_fin
    ```
    python main.py
    ```
+   
 
 
 ## Acknowledgements
 
-- [Your Name](https://github.com/yourusername)
+- [Your Name](https://github.com/BVinayaka)
 - Any other contributors or sources
 
 ---
 
-Feel free to customize this template according to your project's specific details and structure.
+Feel free to customize this template according to your project's specific details and structure.vinayakakamath2@gmail.com
