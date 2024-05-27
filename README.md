@@ -108,10 +108,11 @@ yahoo_fin
    ```
    git clone https://github.com/BVinayaka/IndianStocks.git
    ```
-3. Install the required dependencies:   ```
+2. Install the required dependencies:
+.  ```
    pip install -r requirements.txt
    ```
-4. Run the preprocessing script:
+3. Run the preprocessing script:
    ```
    python main.py
    ```
